@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
+import { submitSignup } from "./signup.action";
+import { FormEvent } from "react";
 
 const FormSchema = z.object({
   name: z.string().min(2, {
@@ -28,7 +30,7 @@ const FormSchema = z.object({
 });
 
 export default function SignUpForm() {
-  const form = useForm<z.infer<typeof FormSchema>>({
+  const formHook = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       name: "",
@@ -37,22 +39,44 @@ export default function SignUpForm() {
     },
   });
 
-  function onSubmit(data: z.infer<typeof FormSchema>) {
-    toast({
-      title: "You submitted the following values:",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
+  async function onSubmit(data: z.infer<typeof FormSchema>) {
+    // console.log("data", data);
+
+    const response = await submitSignup(data);
+    if (response.success) {
+      // Handle success
+      toast({
+        title: "Success!",
+        description:
+          "Your account has been created. Please check your email to verify your account.",
+      });
+    } else {
+      // Handle errors based on the error code
+      if (response.error === "duplicate_email") {
+        toast({
+          title: "Error!",
+          description:
+            "This email is already in use. Please use a different email.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error!",
+          description: "Something went wrong. Please try again later.",
+          variant: "destructive",
+        });
+      }
+    }
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="w-2/3 space-y-6">
+    <Form {...formHook}>
+      <form
+        onSubmit={formHook.handleSubmit((data) => onSubmit(data))}
+        className="w-2/3 space-y-6"
+      >
         <FormField
-          control={form.control}
+          control={formHook.control}
           name="name"
           render={({ field }) => (
             <FormItem>
@@ -65,7 +89,7 @@ export default function SignUpForm() {
           )}
         />
         <FormField
-          control={form.control}
+          control={formHook.control}
           name="email"
           render={({ field }) => (
             <FormItem>
@@ -82,7 +106,7 @@ export default function SignUpForm() {
           )}
         />
         <FormField
-          control={form.control}
+          control={formHook.control}
           name="password"
           render={({ field }) => (
             <FormItem>
@@ -90,7 +114,6 @@ export default function SignUpForm() {
               <FormControl>
                 <Input type="password" placeholder="********" {...field} />
               </FormControl>
-
               <FormMessage />
             </FormItem>
           )}

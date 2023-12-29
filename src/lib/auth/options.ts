@@ -1,4 +1,4 @@
-import NextAuth, { NextAuthOptions, User } from "next-auth";
+import { NextAuthOptions, User } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { session } from "@/lib/auth/session";
@@ -6,13 +6,13 @@ import connectDB from "../database/connectToDb";
 import Users from "../database/models/users.model";
 
 // Define a type for the credentials parameter
-type Credentials = Record<"username" | "password", string>;
+type Credentials = Record<"email" | "password", string>;
 
 export const AuthOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       credentials: {
-        username: { label: "Username", type: "text" },
+        email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
       authorize: async (
@@ -23,11 +23,13 @@ export const AuthOptions: NextAuthOptions = {
         if (!credentials) {
           return null;
         }
+        // console.log(credentials);
 
-        const { username, password } = credentials;
+        const { email, password } = credentials;
 
         // Validate login credentials
-        const user = await Users.findOne({ email: username, password });
+        const user = await Users.findOne({ email, password });
+        // console.log(user);
 
         return user || null;
       },
@@ -42,8 +44,9 @@ export const AuthOptions: NextAuthOptions = {
     maxAge: 60 * 60,
   },
   callbacks: {
-    async signIn({ account, profile }) {
-      console.log(account, "Account");
+    async signIn({ account, profile, email: oemail }) {
+      if (account?.provider === "credentials") return true;
+      console.log(account, profile, oemail, "in sign in ======");
 
       if (!profile?.email) {
         throw new Error("Please enter your email address");
@@ -54,16 +57,16 @@ export const AuthOptions: NextAuthOptions = {
       await connectDB();
 
       try {
-        const existingUser = await Users.findOne({ email });
+        const existingUser = await Users.findOne({ email, google_id: sub });
 
         if (existingUser) {
           await Users.findOneAndUpdate(
-            { email },
-            { id: sub, name, image, type: "google" }
+            { email, google_id: sub },
+            { name, image }
           );
         } else {
           const newUser = new Users({
-            id: sub,
+            google_id: sub,
             name,
             image,
             email,

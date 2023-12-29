@@ -1,13 +1,15 @@
 import mongoose, { InferSchemaType, Schema, model } from "mongoose";
 
 const userSchema = new Schema({
-  id: {
+  google_id: {
     type: String,
-    required: true,
-    unique: true,
+    default: null,
   },
   email: {
     type: String,
+    index: {
+      unique: true,
+    },
     required: true,
   },
   name: {
@@ -16,21 +18,21 @@ const userSchema = new Schema({
   },
   image: {
     type: String,
-    default:null
+    default: null,
   },
   password: {
     type: String,
   },
-  type:{
+  type: {
     type: String,
-    enum: ['google','credentials'],
+    enum: ["google", "credentials"],
     required: true,
   },
-  role:{
-    type : String,
-    enum: ['teacher','student', "parent", "school-leader"],
-    default: 'student'
-  }
+  role: {
+    type: String,
+    enum: ["student", "teacher", "parent", "school-leader"],
+    default: "student",
+  },
 });
 export type User = InferSchemaType<typeof userSchema>;
 
