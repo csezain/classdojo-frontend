@@ -1,6 +1,7 @@
 "use server";
 import connectDB from "@/lib/database/connectToDb";
 import Users from "@/lib/database/models/users.model";
+import bcrypt from "bcrypt";
 
 interface IUserValues {
   name: string;
@@ -13,12 +14,22 @@ interface SubmitSignupResponse {
   error?: "duplicate_email" | "unknown_error";
 }
 
-export async function submitSignup(
-  values: IUserValues
-): Promise<SubmitSignupResponse> {
+export async function submitSignup({
+  password,
+  email,
+  name,
+}: IUserValues): Promise<SubmitSignupResponse> {
   await connectDB();
   try {
-    const user = new Users({ ...values, type: "credentials" });
+    const salt = bcrypt.genSaltSync();
+    const hashedPassword = bcrypt.hashSync(password, salt);
+
+    const user = new Users({
+      name,
+      email,
+      password: hashedPassword,
+      type: "credentials",
+    });
     const saved = await user.save();
     return { success: true };
   } catch (error: any) {

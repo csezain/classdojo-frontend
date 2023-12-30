@@ -15,8 +15,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <NextAuthProvider session={session}>{children}</NextAuthProvider>
+      <body className={`${inter.className} flex flex-col min-h-screen`}>
+        <div className="Navbar">Navbar</div>
+        <div className="flex-grow">
+          <NextAuthProvider session={session}>{children}</NextAuthProvider>
+        </div>
+        <div className="Navbar">Footer</div>
         <Toaster />
       </body>
     </html>

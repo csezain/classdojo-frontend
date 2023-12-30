@@ -33,6 +33,10 @@ const userSchema = new Schema({
     enum: ["student", "teacher", "parent", "school-leader"],
     default: "student",
   },
+  verified:{
+    type:Boolean,
+    default : false
+  }
 });
 export type User = InferSchemaType<typeof userSchema>;
 

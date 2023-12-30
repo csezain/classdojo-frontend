@@ -4,8 +4,8 @@ import GoogleProvider from "next-auth/providers/google";
 import { session } from "@/lib/auth/session";
 import connectDB from "../database/connectToDb";
 import Users from "../database/models/users.model";
+import bcrypt from "bcrypt";
 
-// Define a type for the credentials parameter
 type Credentials = Record<"email" | "password", string>;
 
 export const AuthOptions: NextAuthOptions = {
@@ -16,22 +16,25 @@ export const AuthOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       authorize: async (
-        credentials: Credentials | undefined,
-        req: any
+        credentials: Credentials | undefined
       ): Promise<User | null> => {
-        // Validate credentials, for example, check against your database
         if (!credentials) {
-          return null;
+          throw new Error(`invalid credentials`);
         }
-        // console.log(credentials);
-
+        await connectDB();
         const { email, password } = credentials;
 
-        // Validate login credentials
-        const user = await Users.findOne({ email, password });
-        // console.log(user);
+        const user = await Users.findOne({ email });
 
-        return user || null;
+        if (!user || !bcrypt.compareSync(password, user.password)) {
+          throw new Error("password mismatch");
+        }
+
+        if (!user.verified) {
+          throw new Error("not verified");
+        }
+
+        return user;
       },
     }),
     GoogleProvider({
@@ -43,47 +46,58 @@ export const AuthOptions: NextAuthOptions = {
     strategy: "jwt",
     maxAge: 60 * 60,
   },
+  pages: {
+    signIn: "/auth/signin",
+    // signOut: "/auth/signout",
+    error: "/auth/error",
+  },
   callbacks: {
     async signIn({ account, profile, email: oemail }) {
       if (account?.provider === "credentials") return true;
-      console.log(account, profile, oemail, "in sign in ======");
 
-      if (!profile?.email) {
-        throw new Error("Please enter your email address");
-      }
+      if (account?.provider === "google") {
+        const { sub, name, email, picture, email_verified } = profile as {
+          sub: string;
+          name: string;
+          email: string;
+          picture: string;
+          email_verified: boolean;
+        };
 
-      const { sub, name, email, image } = profile;
+        await connectDB();
 
-      await connectDB();
+        try {
+          const existingUser = await Users.findOne({ email });
 
-      try {
-        const existingUser = await Users.findOne({ email, google_id: sub });
+          if (existingUser) {
+            // Update user information if it already exists
+            await Users.findOneAndUpdate(
+              { email },
+              { name, image: picture, verified: !!email_verified || false }
+            );
+          } else {
+            // Create a new user if it doesn't exist
+            const newUser = new Users({
+              google_id: sub,
+              name,
+              image: picture,
+              email,
+              verified: !!email_verified,
+              type: "google",
+            });
+            await newUser.save();
+          }
 
-        if (existingUser) {
-          await Users.findOneAndUpdate(
-            { email, google_id: sub },
-            { name, image }
-          );
-        } else {
-          const newUser = new Users({
-            google_id: sub,
-            name,
-            image,
-            email,
-            type: "google",
-          });
-          await newUser.save();
+          return true;
+        } catch (error: any) {
+          console.error("Error during signIn:", error);
+          throw new Error("Error during signIn");
         }
-
-        return true;
-      } catch (error) {
-        console.error("Error during signIn:", error);
-        throw new Error("Error during signIn");
       }
+
+      return false;
     },
     async jwt({ user, token, account, profile }) {
-      // console.log(user, "IN JWT CB");
-
       if (user?.id) {
         token.id = user.id;
       }

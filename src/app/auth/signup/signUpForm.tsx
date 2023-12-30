@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -15,7 +14,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
 import { submitSignup } from "./signup.action";
-import { FormEvent } from "react";
+import { useState } from "react";
+import VerificationBox from "./verificationBox";
 
 const FormSchema = z.object({
   name: z.string().min(2, {
@@ -30,6 +30,7 @@ const FormSchema = z.object({
 });
 
 export default function SignUpForm() {
+  const [isAccountCreated, setIsAccountCreated] = useState<boolean>(false);
   const formHook = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -40,18 +41,15 @@ export default function SignUpForm() {
   });
 
   async function onSubmit(data: z.infer<typeof FormSchema>) {
-    // console.log("data", data);
-
     const response = await submitSignup(data);
     if (response.success) {
-      // Handle success
       toast({
         title: "Success!",
         description:
           "Your account has been created. Please check your email to verify your account.",
       });
+      setIsAccountCreated(true);
     } else {
-      // Handle errors based on the error code
       if (response.error === "duplicate_email") {
         toast({
           title: "Error!",
@@ -67,6 +65,9 @@ export default function SignUpForm() {
         });
       }
     }
+  }
+  if (isAccountCreated) {
+    return <VerificationBox />;
   }
 
   return (
@@ -95,11 +96,7 @@ export default function SignUpForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input
-                  type="email"
-                  placeholder="john.doe@example.com"
-                  {...field}
-                />
+                <Input type="email" placeholder="user@example.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
