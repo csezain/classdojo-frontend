@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import Navbar from "./components/Navbar/Navbar";
 
 // const inter = Inter({ subsets: ["latin"] });
- const primary = Urbanist({
+const primary = Urbanist({
   subsets: ["latin"],
   weight: ["200", "300", "400", "500", "600", "700", "800", "900"],
   variable: "--font-primary",
@@ -21,7 +21,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${primary.variable}`}>
-      <body className={`flex flex-col min-h-screen font-primary`}>
+      <body
+        className={`flex flex-col min-h-screen font-primary w-full overflow-x-hidden`}
+      >
         <Navbar />
         <div className="flex-grow">
           <NextAuthProvider session={session}>{children}</NextAuthProvider>

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { INavbarLinks, NavbarLinks } from "@/data";
+import { INavbarLinks, NavbarLinks } from "@/app/data";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Menu } from "lucide-react";
@@ -13,7 +13,7 @@ const Navbar = () => {
     <header className=" bg-primary/5">
       <div className="w-full max-w-7xl mx-auto flex justify-between px-10 relative">
         {/* LOG */}
-        <div className="py-5">
+        <div className="py-5 h-max">
           <Link href={"/"}>
             <p className="text-xl font-bold text-primary">Pak Grammar School</p>
           </Link>
